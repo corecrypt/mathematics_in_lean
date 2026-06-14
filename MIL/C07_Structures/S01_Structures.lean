@@ -81,14 +81,22 @@ theorem addAlt_comm (a b : Point) : addAlt a b = addAlt b a := by
   repeat' apply add_comm
 
 protected theorem add_assoc (a b c : Point) : (a.add b).add c = a.add (b.add c) := by
-  sorry
+  rw [add, add, add, add]
+  rw [add_assoc, add_assoc, add_assoc]
 
-def smul (r : ℝ) (a : Point) : Point :=
-  sorry
+def smul (r : ℝ) (a : Point) : Point where
+  x := r * a.x
+  y := r * a.y
+  z := r * a.z
 
 theorem smul_distrib (r : ℝ) (a b : Point) :
     (smul r a).add (smul r b) = smul r (a.add b) := by
-  sorry
+  rw [add, smul, smul, smul, add]
+  simp_all
+  constructor; rw [mul_add]
+  constructor; rw [mul_add]
+  rw [mul_add]
+
 
 end Point
 
@@ -126,8 +134,32 @@ def midpoint (a b : StandardTwoSimplex) : StandardTwoSimplex
   sum_eq := by field_simp; linarith [a.sum_eq, b.sum_eq]
 
 def weightedAverage (lambda : Real) (lambda_nonneg : 0 ≤ lambda) (lambda_le : lambda ≤ 1)
-    (a b : StandardTwoSimplex) : StandardTwoSimplex :=
-  sorry
+    (a b : StandardTwoSimplex) : StandardTwoSimplex where
+    x := lambda * a.x + (1 - lambda) * b.x
+    y := lambda * a.y + (1 - lambda) * b.y
+    z := lambda * a.z + (1 - lambda) * b.z
+
+    x_nonneg := by
+      apply add_nonneg
+      apply mul_nonneg lambda_nonneg a.x_nonneg
+      apply mul_nonneg (sub_nonneg_of_le lambda_le) b.x_nonneg
+
+    y_nonneg := by
+      apply add_nonneg
+      apply mul_nonneg lambda_nonneg a.y_nonneg
+      apply mul_nonneg (sub_nonneg_of_le lambda_le) b.y_nonneg
+
+    z_nonneg := by
+      apply add_nonneg
+      apply mul_nonneg lambda_nonneg a.z_nonneg
+      apply mul_nonneg (sub_nonneg_of_le lambda_le) b.z_nonneg
+
+    sum_eq := by
+      have : lambda * 1 + (1 - lambda) * 1 = 1 := by norm_num
+      nth_rw 1 [← a.sum_eq] at this
+      nth_rw 2 [← b.sum_eq] at this
+      nth_rw 4 [← this]
+      ring_nf
 
 end
 
@@ -206,4 +238,3 @@ variable (s : StdSimplex)
 #check s.2
 
 end
-

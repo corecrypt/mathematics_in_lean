@@ -179,7 +179,15 @@ end Int
 
 theorem sq_add_sq_eq_zero {α : Type*} [Ring α] [LinearOrder α] [IsStrictOrderedRing α]
     (x y : α) : x ^ 2 + y ^ 2 = 0 ↔ x = 0 ∧ y = 0 := by
-  sorry
+  constructor
+  intro h
+  have hx2 : 0 ≤ x^2 := sq_nonneg x
+  have hy2 : 0 ≤ y^2 := sq_nonneg y
+  rcases (add_eq_zero_iff_of_nonneg hx2 hy2).mp h with ⟨hx2, hy2⟩
+  constructor <;> apply pow_eq_zero <;> assumption
+  intro
+  simp [*]
+
 namespace GaussInt
 
 def norm (x : GaussInt) :=
@@ -187,13 +195,56 @@ def norm (x : GaussInt) :=
 
 @[simp]
 theorem norm_nonneg (x : GaussInt) : 0 ≤ norm x := by
-  sorry
+  rw [norm]
+  apply add_nonneg
+  repeat apply sq_nonneg
+
 theorem norm_eq_zero (x : GaussInt) : norm x = 0 ↔ x = 0 := by
-  sorry
+  rw [GaussInt.ext_iff]
+  apply sq_add_sq_eq_zero
+
+-- Shouldn't I just be able to "negate" the previous statement?
 theorem norm_pos (x : GaussInt) : 0 < norm x ↔ x ≠ 0 := by
-  sorry
+  have old := (norm_eq_zero x).not
+  push_neg at old
+  have : 0 ≠ norm x ↔ 0 < norm x := ne_iff_lt_iff_le.mpr (norm_nonneg x)
+  tauto
+
+  /-
+  have : norm x ≤ 0 → norm x = 0 := by
+    intro h
+    apply le_antisymm h (norm_nonneg x)
+
+  by_contra h
+  push_neg at h
+  rcases h with ⟨h1, h2⟩ | ⟨h1, h2⟩
+  linarith [(norm_eq_zero x).mpr h2]
+  apply h2 ((norm_eq_zero x).mp (this h1))
+  -/
+
+  /-
+  constructor
+  intro h
+  by_contra h'
+  rw [h', norm] at h
+  simp at h
+  intro h'
+  rw [norm]
+  have : x.re ≠ 0 ∨ x.im ≠ 0 := by
+    by_contra hh
+    push_neg at hh
+    nth_rw 1 [← zero_re, ← zero_im] at hh
+    exact h' (GaussInt.ext_iff.mpr hh)
+
+  have hre2 := sq_nonneg x.re
+  have him2 := sq_nonneg x.im
+  rcases this with (h | h) <;> linarith [sq_pos_of_ne_zero h]
+  -/
+
 theorem norm_mul (x y : GaussInt) : norm (x * y) = norm x * norm y := by
-  sorry
+  rw [norm, norm, norm, mul_def]
+  ring
+
 def conj (x : GaussInt) : GaussInt :=
   ⟨x.re, -x.im⟩
 
