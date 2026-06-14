@@ -86,13 +86,18 @@ def conjugate {G : Type*} [Group G] (x : G) (H : Subgroup G) : Subgroup G where
   carrier := {a : G | ∃ h, h ∈ H ∧ a = x * h * x⁻¹}
   one_mem' := by
     dsimp
-    sorry
+    use 1, H.one_mem
+    simp
   inv_mem' := by
     dsimp
-    sorry
+    rintro z ⟨a, ha, rfl⟩
+    use a⁻¹, H.inv_mem ha
+    group
   mul_mem' := by
     dsimp
-    sorry
+    rintro a b ⟨c, hc, rfl⟩ ⟨d, hd, rfl⟩
+    use c * d, H.mul_mem hc hd
+    group
 
 example {G H : Type*} [Group G] [Group H] (G' : Subgroup G) (f : G →* H) : Subgroup H :=
   Subgroup.map f G'
@@ -117,23 +122,49 @@ variable {G H : Type*} [Group G] [Group H]
 open Subgroup
 
 example (φ : G →* H) (S T : Subgroup H) (hST : S ≤ T) : comap φ S ≤ comap φ T := by
-  sorry
+  intro x hx
+  rw [Subgroup.mem_comap] at *
+  apply hST hx
 
 example (φ : G →* H) (S T : Subgroup G) (hST : S ≤ T) : map φ S ≤ map φ T := by
-  sorry
+  rintro y ⟨x, hx, rfl⟩
+  apply Subgroup.mem_map.mpr
+  use x, hST hx
 
 variable {K : Type*} [Group K]
 
 -- Remember you can use the `ext` tactic to prove an equality of subgroups.
 example (φ : G →* H) (ψ : H →* K) (U : Subgroup K) :
     comap (ψ.comp φ) U = comap φ (comap ψ U) := by
-  sorry
+  ext x
+  constructor
+  intro h
+  rw [mem_comap, mem_comap] at *
+  rw [← MonoidHom.comp_apply]
+  apply h
+
+  intro h
+  rw [mem_comap]
+  rw [MonoidHom.comp_apply]
+  rw [← mem_comap, ← mem_comap]
+  apply h
 
 -- Pushing a subgroup along one homomorphism and then another is equal to
 -- pushing it forward along the composite of the homomorphisms.
 example (φ : G →* H) (ψ : H →* K) (S : Subgroup G) :
     map (ψ.comp φ) S = map ψ (S.map φ) := by
-  sorry
+  ext x
+  constructor
+  rintro ⟨y, hy, rfl⟩
+  -- rw [MonoidHom.comp_apply] at eqy
+  use (φ y)
+  constructor
+  use y
+  apply MonoidHom.comp_apply
+
+  rintro ⟨y, ⟨z, hz, rfl⟩, rfl⟩
+  rw [← MonoidHom.comp_apply]
+  use z
 
 end exercises
 
@@ -153,13 +184,31 @@ lemma eq_bot_iff_card {G : Type*} [Group G] {H : Subgroup G} :
     H = ⊥ ↔ Nat.card H = 1 := by
   suffices (∀ x ∈ H, x = 1) ↔ ∃ x ∈ H, ∀ a ∈ H, a = x by
     simpa [eq_bot_iff_forall, Nat.card_eq_one_iff_exists]
-  sorry
+  constructor
+  intro h
+  use 1, H.one_mem
+  rintro ⟨x, hx, eq⟩
+  intro y hy
+  have foo := eq 1 H.one_mem
+  have bar := eq y hy
+  apply Eq.trans bar foo.symm
 
 #check card_dvd_of_le
 
 lemma inf_bot_of_coprime {G : Type*} [Group G] (H K : Subgroup G)
     (h : (Nat.card H).Coprime (Nat.card K)) : H ⊓ K = ⊥ := by
-  sorry
+  apply eq_bot_iff_card.mpr
+  have leqh : H ⊓ K ≤ H := by exact inf_le_left
+  have leqk : H ⊓ K ≤ K := by exact inf_le_right
+  have divh := Subgroup.card_dvd_of_le leqh
+  have divk := Subgroup.card_dvd_of_le leqk
+  have foo := dvd_gcd divh divk
+  have bar := Nat.coprime_iff_gcd_eq_one.mp h
+  -- Why do I have to do this? rw [bar] doesn't work otherwise
+  have : ∀ x y : ℕ, gcd x y = x.gcd y := by exact fun x y ↦ rfl
+  rw [this, bar] at foo
+  apply Nat.dvd_one.mp
+  apply foo
 open Equiv
 
 example {X : Type*} [Finite X] : Subgroup.closure {σ : Perm X | Perm.IsCycle σ} = ⊤ :=
@@ -228,14 +277,43 @@ example {G : Type*} [Group G] (H : Subgroup G) : G ≃ (G ⧸ H) × H :=
 variable {G : Type*} [Group G]
 
 lemma conjugate_one (H : Subgroup G) : conjugate 1 H = H := by
-  sorry
+  ext x
+  constructor
+  rintro ⟨a, ha, rfl⟩
+  group
+  exact ha
+
+  intro h
+  use x, h, (by group)
 
 instance : MulAction G (Subgroup G) where
   smul := conjugate
   one_smul := by
-    sorry
+    intro H
+    ext x
+    constructor
+    rintro ⟨y, hy, rfl⟩
+    group; exact hy
+
+    intro h
+    use x, h, (by group)
+
   mul_smul := by
-    sorry
+    intro x y H
+    ext z
+    constructor
+    rintro ⟨w, hy, weq⟩
+    use y * w * y⁻¹
+    constructor
+    use w
+    rw [weq]
+    group
+
+    rintro ⟨a, ⟨b, hb, beq⟩, aeq⟩
+    rw [beq] at aeq
+    use b, hb
+    rw [aeq]
+    group
 
 end GroupActions
 
@@ -274,7 +352,12 @@ open MonoidHom
 
 lemma aux_card_eq [Finite G] (h' : Nat.card G = Nat.card H * Nat.card K) :
     Nat.card (G ⧸ H) = Nat.card K := by
-  sorry
+  rw [← Subgroup.index_eq_card]
+  have := Subgroup.index_mul_card H
+  rw [← this, mul_comm] at h'
+  apply Nat.eq_of_mul_eq_mul_left ?_ h'
+  exact Nat.card_pos
+
 variable [H.Normal] [K.Normal] [Fintype G] (h : Disjoint H K)
   (h' : Nat.card G = Nat.card H * Nat.card K)
 
@@ -283,11 +366,59 @@ variable [H.Normal] [K.Normal] [Fintype G] (h : Disjoint H K)
 #check restrict
 #check ker_restrict
 
+-- I had to peek at the solution here.
+-- I just want to say that kef f ≤ H ⊓ K = ⊥ so f is injective, but I was having problems.
 def iso₁ : K ≃* G ⧸ H := by
-  sorry
+  have card_eq := aux_card_eq h'
+  let f := (QuotientGroup.mk' H).restrict K
+  apply MulEquiv.ofBijective f
+  apply (Nat.bijective_iff_injective_and_card f).mpr
+  constructor
+  have injf : Function.Injective f := by
+    apply (ker_eq_bot_iff f).mp
+    rw [(QuotientGroup.mk' H).ker_restrict]
+    simp
+    apply h
+
+  apply injf
+  apply (aux_card_eq h').symm
+
 def iso₂ : G ≃* (G ⧸ K) × (G ⧸ H) := by
-  sorry
+  have : K ≃* G ⧸ H := by exact iso₁ h h'
+  let f := MonoidHom.prod (QuotientGroup.mk' K) (QuotientGroup.mk' H)
+  apply MulEquiv.ofBijective f
+  apply (Nat.bijective_iff_injective_and_card f).mpr
+
+  constructor
+  apply (ker_eq_bot_iff f).mp
+  rw [ker_prod]
+  repeat rw [QuotientGroup.ker_mk']
+  apply (disjoint_iff).mp h.symm
+
+  have card1 := (aux_card_eq h').symm
+  rw [mul_comm] at h'
+  have card2 := (aux_card_eq h').symm
+  rw [mul_comm, card1, card2] at h'
+  rw [Nat.card_prod]
+  apply h'
+
+
 #check MulEquiv.prodCongr
 
-def finalIso : G ≃* H × K :=
+def finalIso : G ≃* H × K := by
+  have f1 := iso₁ h h'
+  have f2 := iso₂ h h'
+  -- have f2 : G ≃ (G ⧸ H) × H := groupEquivQuotientProdSubgroup
+  have ghrefl := MulEquiv.refl (G ⧸ H)
+  have gkrefl := MulEquiv.refl (G ⧸ K)
+  have := MulEquiv.prodCongr gkrefl f1
+  have := f2.trans this.symm
+  -- We have  G = (G / K) x K
+  -- and that G = (G / K) x (G / H)
+  -- We want G = H x K
+  -- G = G/K x K
+  -- K = G/H
+  -- and G/K = G/K
+  -- so G/K x G/H = G/K x K
+  -- have := MulEquiv.prodCongr MulEquiv.refl H)
   sorry
