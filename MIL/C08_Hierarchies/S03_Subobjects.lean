@@ -69,7 +69,13 @@ def Submonoid.Setoid [CommMonoid M] (N : Submonoid M) : Setoid M  where
     refl := fun x ↦ ⟨1, N.one_mem, 1, N.one_mem, rfl⟩
     symm := fun ⟨w, hw, z, hz, h⟩ ↦ ⟨z, hz, w, hw, h.symm⟩
     trans := by
-      sorry
+      intro x y z
+      rintro ⟨u, hu, v, hv, eq1⟩
+      rintro ⟨w, hw, r, hr, eq2⟩
+      use u * w, N.mul_mem hu hw
+      use r * v, N.mul_mem hr hv
+      rw [← mul_assoc, ← mul_assoc]
+      rw [eq1, mul_assoc, mul_comm v w, ← mul_assoc, eq2]
   }
 
 instance [CommMonoid M] : HasQuotient M (Submonoid M) where
@@ -79,12 +85,33 @@ def QuotientMonoid.mk [CommMonoid M] (N : Submonoid M) : M → M ⧸ N := Quotie
 
 instance [CommMonoid M] (N : Submonoid M) : Monoid (M ⧸ N) where
   mul := Quotient.map₂ (· * ·) (by
-      sorry
+        rintro a₁ a₂ ⟨w, hw, x, hx, eq1⟩ b₁ b₂ ⟨y, hy, z, hz, eq2⟩
+        dsimp
+        use w * y, N.mul_mem hw hy
+        use x * z, N.mul_mem hx hz
+        -- Yikes!
+        rw [mul_assoc, mul_comm b₁, ← mul_assoc a₁, ← mul_assoc a₁]
+        rw [eq1]
+        rw [mul_assoc, mul_comm y, eq2]
+        rw [mul_assoc, mul_comm x, ← mul_assoc, ← mul_assoc]
+        rw [mul_comm x, mul_assoc]
         )
   mul_assoc := by
-      sorry
+      rintro ⟨a⟩ ⟨b⟩ ⟨c⟩
+      have := Quot.sound (mul_assoc a b c)
+      have := @Setoid.refl M N.Setoid (a * b * c)
+      nth_rw 2 [mul_assoc] at this
+      apply Quot.sound this
   one := QuotientMonoid.mk N 1
   one_mul := by
-      sorry
+      rintro ⟨a⟩
+      have := one_mul a
+      have := @Setoid.refl M N.Setoid a
+      nth_rw 1 [← one_mul a] at this
+      apply Quot.sound this
   mul_one := by
-      sorry
+      rintro ⟨a⟩
+      have := mul_one a
+      have := @Setoid.refl M N.Setoid a
+      nth_rw 1 [← mul_one a] at this
+      apply Quot.sound this
