@@ -118,15 +118,13 @@ example {M : Type} [Monoid₁ M] {a b c : M} (hba : b ⋄ a = 𝟙) (hac : a ⋄
   rw [← one_dia c, ← hba, dia_assoc, hac, dia_one b]
 
 
-lemma inv_eq_of_dia [Group₁ G] {a b : G} (h : a ⋄ b = 𝟙) : a⁻¹ = b := by
-  apply left_inv_eq_right_inv₁
-  apply inv_dia a
-  apply h
+lemma inv_eq_of_dia [Group₁ G] {a b : G} (h : a ⋄ b = 𝟙) : a⁻¹ = b :=
+  sorry
+
+lemma dia_inv [Group₁ G] (a : G) : a ⋄ a⁻¹ = 𝟙 :=
+  sorry
 
 
-lemma dia_inv [Group₁ G] (a : G) : a ⋄ a⁻¹ = 𝟙 := by
-  nth_rw 1 [← inv_eq_of_dia (inv_dia a)]
-  rw [inv_dia]
 
 
 class AddSemigroup₃ (α : Type) extends Add α where
@@ -178,39 +176,21 @@ attribute [simp] Group₃.inv_mul AddGroup₃.neg_add
 
 
 @[to_additive]
-lemma inv_eq_of_mul [Group₃ G] {a b : G} (h : a * b = 1) : a⁻¹ = b := by
-  rw [← mul_one a⁻¹]
-  rw [← h]
-  rw [← Group₃.toMonoid₃.mul_assoc₃]
-  rw [Group₃.inv_mul]
-  rw [one_mul]
+lemma inv_eq_of_mul [Group₃ G] {a b : G} (h : a * b = 1) : a⁻¹ = b :=
+  sorry
 
 
 @[to_additive (attr := simp)]
 lemma Group₃.mul_inv {G : Type} [Group₃ G] {a : G} : a * a⁻¹ = 1 := by
-  rw [← inv_mul a⁻¹]
-  have : a⁻¹⁻¹ = a := by
-    apply inv_eq_of_mul
-    apply inv_mul
-  rw [this]
+  sorry
 
 @[to_additive]
 lemma mul_left_cancel₃ {G : Type} [Group₃ G] {a b c : G} (h : a * b = a * c) : b = c := by
-  have := congrArg (fun x ↦ a⁻¹ * x) h
-  dsimp at this
-  rw [← mul_assoc₃] at this
-  rw [← mul_assoc₃] at this
-  rw [Group₃.inv_mul, one_mul, one_mul] at this
-  apply this
+  sorry
 
 @[to_additive]
-lemma mul_right_cancel₃ {G : Type} [Group₃ G] {a b c : G} (h : b * a = c * a) : b = c := by
-  have := congrArg (fun x ↦ x * a⁻¹) h
-  dsimp at this
-  rw [mul_assoc₃] at this
-  rw [mul_assoc₃] at this
-  rw [Group₃.mul_inv, mul_one, mul_one] at this
-  apply this
+lemma mul_right_cancel₃ {G : Type} [Group₃ G] {a b c : G} (h : b*a = c*a) : b = c := by
+  sorry
 
 class AddCommGroup₃ (G : Type) extends AddGroup₃ G, AddCommMonoid₃ G
 
@@ -227,41 +207,7 @@ class Ring₃ (R : Type) extends AddGroup₃ R, Monoid₃ R, MulZeroClass R wher
 
 instance {R : Type} [Ring₃ R] : AddCommGroup₃ R :=
 { add_comm := by
-    -- Not the prettiest
-    intro a b
-    have fact : (1 : R) + -1 = 0 := by exact AddGroup₃.add_neg
-    have : ∀(x : R), 0 = (1 + -1) * x := by intro x; exact Eq.symm (mul_eq_zero_of_left fact x)
-    have foo1 : ∀(x : R), 0 = x + (-1) * x := by
-      intro x
-      nth_rw 1 [← one_mul x]
-      rw [← Ring₃.right_distrib 1 (-1) x]
-      exact this x
-
-    have neg_eq_neg_one_mul: ∀(x : R), -x = (-1) * x := by
-      intro x;
-      apply neg_eq_of_add (foo1 x).symm
-
-    have : (a + b) + -(b + a) = a + b + (-b) + (-a) := by
-      rw [neg_eq_neg_one_mul a, neg_eq_neg_one_mul b]
-      rw [neg_eq_neg_one_mul (b + a)]
-      rw [Ring₃.left_distrib]
-      simp [add_assoc₃]
-
-    have : a + b + -(b + a) = 0 := by
-      simp [add_assoc₃, add_neg] at this
-      simp [add_assoc₃]
-      exact this
-
-    have bar := neg_eq_of_add this
-    have key := congrArg Ring₃.toAddGroup₃.neg bar
-    have : ∀(x : R), - -x = x := by
-      intro x
-      apply neg_eq_of_add
-      simp
-
-    rw [this, this] at key
-    apply key
-}
+    sorry }
 
 instance : Ring₃ ℤ where
   add := (· + ·)
@@ -287,31 +233,13 @@ class LE₁ (α : Type) where
 
 @[inherit_doc] infix:50 " ≤₁ " => LE₁.le
 
-class Preorder₁ (α : Type) extends LE₁ α where
-  le_refl : ∀x : α, x ≤₁ x
-  le_trans : ∀x y z : α, x ≤₁ y → y ≤₁ z → x ≤₁ z
+class Preorder₁ (α : Type)
 
-class PartialOrder₁ (α : Type) extends Preorder₁ α where
-  le_antisymm : ∀x y: α, x ≤₁ y → y ≤₁ x → x = y
+class PartialOrder₁ (α : Type)
 
-class OrderedCommMonoid₁ (α : Type) extends CommMonoid₃ α, PartialOrder₁ α where
-  mul_left_le_of_le : ∀ a b : α, a ≤₁ b → ∀ c : α, c * a ≤₁ c * b
+class OrderedCommMonoid₁ (α : Type)
 
 instance : OrderedCommMonoid₁ ℕ where
-  le := Nat.le
-  mul_assoc₃ := Nat.mul_assoc
-  mul_comm := Nat.mul_comm
-  le_refl := Nat.le_refl
-  le_trans := by
-    intro _ _ _
-    apply Nat.le_trans
-  le_antisymm := by
-    intro _ _
-    apply Nat.le_antisymm
-  mul_left_le_of_le := by
-    intro a b aleb c
-    apply Nat.mul_le_mul_left c
-    apply aleb
 
 class SMul₃ (α : Type) (β : Type) where
   /-- Scalar multiplication -/
@@ -383,3 +311,4 @@ instance : AddMonoid₄ ℤ where
     by rw [Int.add_mul, Int.add_comm, Int.one_mul]
 
 example (n : ℕ) (m : ℤ) : SMul.smul (self := mySMul) n m = n * m := rfl
+

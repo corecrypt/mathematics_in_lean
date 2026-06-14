@@ -105,31 +105,13 @@ structure OrderPresHom (α β : Type) [LE α] [LE β] where
 structure OrderPresMonoidHom (M N : Type) [Monoid M] [LE M] [Monoid N] [LE N] extends
 MonoidHom₁ M N, OrderPresHom M N
 
-class OrderPresHomClass (F : Type) (α β : outParam Type) [LE α] [LE β] extends
-  DFunLike F α  (fun _ ↦ β) where
-  toFun : F → α → β
-  le_of_le : ∀ F a a', a ≤ a' → toFun F a ≤ toFun F a'
-
+class OrderPresHomClass (F : Type) (α β : outParam Type) [LE α] [LE β]
 
 instance (α β : Type) [LE α] [LE β] : OrderPresHomClass (OrderPresHom α β) α β where
-  coe := OrderPresHom.toFun
-  coe_injective' _ _ := OrderPresHom.ext
-  toFun := OrderPresHom.toFun
-  le_of_le := OrderPresHom.le_of_le
-
 
 instance (α β : Type) [LE α] [Monoid α] [LE β] [Monoid β] :
     OrderPresHomClass (OrderPresMonoidHom α β) α β where
-  coe := fun f ↦ f.toOrderPresHom.toFun
-  coe_injective' _ _ := fun h ↦ OrderPresMonoidHom.ext h
-  toFun := fun f ↦ f.toOrderPresHom.toFun
-  le_of_le := fun f ↦ f.toOrderPresHom.le_of_le
-
 
 instance (α β : Type) [LE α] [Monoid α] [LE β] [Monoid β] :
     MonoidHomClass₃ (OrderPresMonoidHom α β) α β
-  where
-    coe := fun f ↦ f.toMonoidHom₁.toFun
-    coe_injective' _ _ := fun h ↦ OrderPresMonoidHom.ext h
-    map_one := fun f ↦ f.toMonoidHom₁.map_one
-    map_mul := fun f ↦ f.toMonoidHom₁.map_mul
+  := sorry

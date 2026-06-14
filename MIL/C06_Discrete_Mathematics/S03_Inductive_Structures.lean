@@ -61,23 +61,12 @@ theorem map_map' (f : α → β) (g : β → γ) (as : List α) :
   . rfl
   . simp [map, ih]
 
-def reverse : List α → List α
-  | [] => []
-  | cons a as => reverse as ++ [a]
-
-#eval reverse [1, 2, 3, 4, 5]
+def reverse : List α → List α := sorry
 
 theorem reverse_append (as bs : List α) : reverse (as ++ bs) = reverse bs ++ reverse as := by
-  induction' as with a as ih
-  . rw [nil_append, reverse, append_nil]
-  . rw [reverse, ← List.append_assoc, ← ih]
-    rw [cons_append, reverse]
+  sorry
 
-theorem reverse_reverse (as : List α) : reverse (reverse as) = as := by
-  induction' as with a as ih
-  . rfl
-  . rw [reverse, reverse_append, ih]
-    rfl
+theorem reverse_reverse (as : List α) : reverse (reverse as) = as := by sorry
 
 end MyListSpace3
 
@@ -108,35 +97,14 @@ theorem size_le : ∀ t : BinTree, size t ≤ 2^depth t - 1
           have : 0 < 2 ^ max l.depth r.depth := by simp
           omega
 
-theorem depth_le_size : ∀ t : BinTree, depth t ≤ size t
-  | empty => Nat.zero_le _
-  | node l r => by
-    simp only [depth, size]
-    apply Nat.add_le_add ?_ (by rfl)
-    apply max_le
-    apply Nat.le_add_right_of_le ?_
-    apply depth_le_size
-    rw [add_comm]
-    apply Nat.le_add_right_of_le ?_
-    apply depth_le_size
+theorem depth_le_size : ∀ t : BinTree, depth t ≤ size t := by sorry
 
-
-def flip : BinTree → BinTree
-  | empty => empty
-  | node l r => node (flip r) (flip l)
+def flip : BinTree → BinTree := sorry
 
 example: flip  (node (node empty (node empty empty)) (node empty empty)) =
-    node (node empty empty) (node (node empty empty) empty) :=
-    rfl
+    node (node empty empty) (node (node empty empty) empty) := sorry
 
-theorem size_flip : ∀ t, size (flip t) = size t
-  | empty => rfl
-  | node l r => by
-    rw [flip]
-    rw [size]
-    rw [size_flip, size_flip]
-    rw [size, add_comm r.size]
-
+theorem size_flip : ∀ t, size (flip t) = size t := by sorry
 end BinTree
 
 inductive PropForm : Type where
@@ -183,37 +151,10 @@ def subst : PropForm → ℕ → PropForm → PropForm
   | disj A B, m, C => disj (A.subst m C) (B.subst m C)
   | impl A B, m, C => impl (A.subst m C) (B.subst m C)
 
-      -- let f := fun Z ↦ subst_eq_of_not_mem_vars Z m C
 theorem subst_eq_of_not_mem_vars :
-    ∀ (A : PropForm) (n : ℕ) (C : PropForm), n ∉ A.vars → A.subst n C = A
-    | var n,    m, C => by simp [subst, vars]; tauto;
-    | fls,      m, C => by simp [subst, vars];
-    | conj A B, m, C => by
-      simp [subst, vars]
-      have := subst_eq_of_not_mem_vars A m C
-      have := subst_eq_of_not_mem_vars B m C
-      tauto
-    | disj A B, m, C => by
-      simp [subst, vars]
-      have := subst_eq_of_not_mem_vars A m C
-      have := subst_eq_of_not_mem_vars B m C
-      tauto
-    | impl A B, m, C => by
-      simp [subst, vars]
-      have := subst_eq_of_not_mem_vars A m C
-      have := subst_eq_of_not_mem_vars B m C
-      tauto
-
+    ∀ (A : PropForm) (n : ℕ) (C : PropForm), n ∉ A.vars → A.subst n C = A := sorry
 
 theorem subst_eval_eq : ∀ (A : PropForm) (n : ℕ) (C : PropForm) (v : ℕ → Bool),
-  (A.subst n C).eval v = A.eval (fun m => if m = n then C.eval v else v m) := by
-    intro A n C v
-    cases A <;> simp_all [subst, eval, subst_eval_eq,];
-    expose_names
-    by_cases h : n = n_1
-    simp_all [eval, subst]
-    split_ifs
-    rfl
-    simp [eval]
+  (A.subst n C).eval v = A.eval (fun m => if m = n then C.eval v else v m) := sorry
 
 end PropForm

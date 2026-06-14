@@ -148,3 +148,4 @@ variable (s : Finset ℕ)
 example : (↑s : Type) = {x : ℕ // x ∈ s} := rfl
 example : Fintype.card ↑s = s.card := by simp
 end
+
