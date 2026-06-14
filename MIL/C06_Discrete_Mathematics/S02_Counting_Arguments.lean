@@ -91,17 +91,79 @@ example (n : ℕ) : #(triangle n) = (n + 1) * n / 2 := by
   let turn (p : ℕ × ℕ) : ℕ × ℕ := (n - 1 - p.1, n - p.2)
   calc 2 * #(triangle n)
       = #(triangle n) + #(triangle n) := by
-          sorry
+          apply two_mul
     _ = #(triangle n) + #(triangle n |>.image turn) := by
-          sorry
+          -- At first I tried using card_image_of_injective, but this didn't help much:
+          -- we need to know that the points are in the triangle!
+          rw [card_image_of_injOn]
+          rintro ⟨x1, x2⟩ hx ⟨y1, y2⟩ hy h
+          simp [turn] at h
+          simp_all [triangle]
+          omega
+
+    -- This is pretty bad. Really relying on simp and omega to do the work.
     _ = #(range n ×ˢ range (n + 1)) := by
-          sorry
+      rw [← card_union_of_disjoint]
+      congr
+      ext ⟨x, y⟩
+      constructor
+      rw [mem_union]
+      simp [triangle, turn]
+      rintro (ha | ⟨a, b, ⟨⟨⟨c, d⟩, e⟩, f⟩⟩)
+      omega
+      omega
+      rintro a
+      simp at a
+      rw [mem_union]
+      by_cases h' : x < y
+      left;
+      have xltn1 := lt_trans a.1 (lt_add_one n)
+      simp [triangle]
+      exact ⟨⟨xltn1, a.2⟩, h'⟩
+
+      right
+      push_neg at h'
+      simp
+      use n - 1 - x, n - y
+      simp [triangle, turn]
+      omega
+
+      rw [disjoint_iff_ne]
+      rintro ⟨a1, a2⟩ ha ⟨b1, b2⟩ hb
+      simp [turn] at hb
+      simp [triangle] at *
+      omega
+
     _ = (n + 1) * n := by
-          sorry
+          rw [mul_comm, card_product]
+          repeat rw [card_range]
+
+
 
 def triangle' (n : ℕ) : Finset (ℕ × ℕ) := {p ∈ range n ×ˢ range n | p.1 ≤ p.2}
 
-example (n : ℕ) : #(triangle' n) = #(triangle n) := by sorry
+-- I peeked at the solution
+example (n : ℕ) : #(triangle' n) = #(triangle n) := by
+  let f : ℕ × ℕ → ℕ × ℕ := fun (x, y) ↦ (x, y + 1)
+  -- For some reason I need to use image f instead of the notation f ''.
+  -- Maybe because '' isn't for Finsets?
+  have : triangle n = image f (triangle' n) := by
+    ext ⟨x, y⟩
+    simp [triangle, triangle', f]
+    constructor
+    rintro h
+    use x, (y - 1)
+    omega
+    rintro ⟨a, b, h⟩
+    omega
+
+  rw [this]
+  symm
+  apply card_image_of_injective
+  rintro ⟨x1, y1⟩ ⟨x2, y2⟩ h
+  simp [f] at h
+  exact Prod.mk_inj.mpr h
+
 
 section
 open Classical
@@ -129,8 +191,26 @@ example {n : ℕ} (A : Finset ℕ)
     ∃ m ∈ A, ∃ k ∈ A, Nat.Coprime m k := by
   have : ∃ t ∈ range n, 1 < #({u ∈ A | u / 2 = t}) := by
     apply exists_lt_card_fiber_of_mul_lt_card_of_maps_to
-    · sorry
-    · sorry
+    · simp
+      rw [subset_iff] at hA'
+      simp at hA'
+      intro a ha
+      have := hA' ha
+      omega
+    · rw [hA, card_range]
+      omega
   rcases this with ⟨t, ht, ht'⟩
   simp only [one_lt_card, mem_filter] at ht'
-  sorry
+  rcases ht' with ⟨a, ha, ⟨b, hb⟩⟩
+  use a, ha.1, b, hb.1.1
+  have : a ≠ b := by omega
+  have : a/2 = b/2 := by omega
+  have : a = b + 1 ∨ b = a + 1 := by omega
+  rcases this with (h | h)
+  rw [h, Nat.coprime_comm]
+  rw [Nat.coprime_self_add_right]
+  exact Nat.gcd_one_right _
+
+  rw [h]
+  rw [Nat.coprime_self_add_right]
+  exact Nat.gcd_one_right _
