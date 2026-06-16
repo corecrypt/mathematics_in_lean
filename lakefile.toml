@@ -1,5 +1,5 @@
 name = "mil"
-defaultTargets = ["MIL"]
+defaultTargets = ["MIL", "MySolutions"]
 
 [leanOptions]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`
@@ -13,3 +13,6 @@ rev = "v4.21.0"
 
 [[lean_lib]]
 name = "MIL"
+
+[[lean_lib]]
+name = "my_solutions"
