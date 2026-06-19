@@ -367,8 +367,10 @@ variable [H.Normal] [K.Normal] [Fintype G] (h : Disjoint H K)
 #check ker_restrict
 
 -- I had to peek at the solution here.
--- I just want to say that kef f ≤ H ⊓ K = ⊥ so f is injective, but I was having problems.
-def iso₁ : K ≃* G ⧸ H := by
+-- I just wanted to say that kef f ≤ H ⊓ K = ⊥ so f that injective, but I was having problems.
+def aux_iso
+[H.Normal] [K.Normal] [Fintype G] (h : Disjoint H K) (h' : Nat.card G = Nat.card H * Nat.card K)
+: K ≃* G ⧸ H := by
   have card_eq := aux_card_eq h'
   let f := (QuotientGroup.mk' H).restrict K
   apply MulEquiv.ofBijective f
@@ -382,6 +384,12 @@ def iso₁ : K ≃* G ⧸ H := by
 
   apply injf
   apply (aux_card_eq h').symm
+
+def iso₁ : K ≃* G ⧸ H := aux_iso h h'
+
+def iso₁' : H ≃* G ⧸ K := by
+  rw [mul_comm] at h'
+  exact aux_iso h.symm h'
 
 def iso₂ : G ≃* (G ⧸ K) × (G ⧸ H) := by
   have : K ≃* G ⧸ H := by exact iso₁ h h'
@@ -406,19 +414,8 @@ def iso₂ : G ≃* (G ⧸ K) × (G ⧸ H) := by
 #check MulEquiv.prodCongr
 
 def finalIso : G ≃* H × K := by
-  have f1 := iso₁ h h'
-  have f2 := iso₂ h h'
-  -- have f2 : G ≃ (G ⧸ H) × H := groupEquivQuotientProdSubgroup
-  have ghrefl := MulEquiv.refl (G ⧸ H)
-  have gkrefl := MulEquiv.refl (G ⧸ K)
-  have := MulEquiv.prodCongr gkrefl f1
-  have := f2.trans this.symm
-  -- We have  G = (G / K) x K
-  -- and that G = (G / K) x (G / H)
-  -- We want G = H x K
-  -- G = G/K x K
-  -- K = G/H
-  -- and G/K = G/K
-  -- so G/K x G/H = G/K x K
-  -- have := MulEquiv.prodCongr MulEquiv.refl H)
-  sorry
+  have h_iso := iso₁ h h'
+  have k_iso := iso₁' h h'
+  have g_iso_gk_gh := iso₂ h h'
+  have prod_iso := MulEquiv.prodCongr k_iso h_iso
+  exact g_iso_gk_gh.trans (MulEquiv.symm prod_iso)
