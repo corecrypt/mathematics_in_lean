@@ -82,21 +82,26 @@ open Ideal Quotient Function
 
 /-- The homomorphism from ``R ⧸ ⨅ i, I i`` to ``Π i, R ⧸ I i`` featured in the Chinese
   Remainder Theorem. -/
-def chineseMap (I : ι → Ideal R) : (R ⧸ ⨅ i, I i) →+* Π i, R ⧸ I i :=
-  sorry
+def chineseMap (I : ι → Ideal R) : (R ⧸ ⨅ i, I i) →+* Π i, R ⧸ I i := by
+  -- The hom from R to to the product of the quotients modded out by it's kernel
+  have hom := RingHom.kerLift (Pi.ringHom (fun i ↦ Ideal.Quotient.mk (I i)))
+  have ker_eq := ker_Pi_Quotient_mk I
+  have quot_equiv := (Ideal.quotEquivOfEq ker_eq).symm
+  exact hom.comp (quot_equiv.toRingHom)
 
 lemma chineseMap_mk (I : ι → Ideal R) (x : R) :
-    chineseMap I (Quotient.mk _ x) = fun i : ι ↦ Ideal.Quotient.mk (I i) x :=
-  sorry
+    chineseMap I (Quotient.mk _ x) = fun i : ι ↦ Ideal.Quotient.mk (I i) x := rfl
 
 lemma chineseMap_mk' (I : ι → Ideal R) (x : R) (i : ι) :
-    chineseMap I (mk _ x) i = mk (I i) x :=
-  sorry
+    chineseMap I (mk _ x) i = mk (I i) x := rfl
 
 #check injective_lift_iff
 
+-- The solution for this lemma doesn't work for me, perhaps because my chineseMap is
+-- not defined in the same way?
 lemma chineseMap_inj (I : ι → Ideal R) : Injective (chineseMap I) := by
-  sorry
+  simp [chineseMap]
+  apply RingHom.kerLift_injective
 
 #check IsCoprime
 #check isCoprime_iff_add
@@ -117,11 +122,21 @@ theorem isCoprime_Inf {I : Ideal R} {J : ι → Ideal R} {s : Finset ι}
   | @insert i s _ hs =>
       rw [Finset.iInf_insert, inf_comm, one_eq_top, eq_top_iff, ← one_eq_top]
       set K := ⨅ j ∈ s, J j
+      have i_coprime_js : ∀ j ∈ s, I + J j = 1 := by
+        intro j hj
+        exact hf j (Finset.subset_insert i s hj)
+
+      have i_coprime_k := (hs i_coprime_js).symm
       calc
-        1 = I + K                  := sorry
-        _ = I + K * (I + J i)      := sorry
-        _ = (1 + K) * I + K * J i  := sorry
-        _ ≤ I + K ⊓ J i            := sorry
+        1 = I + K                  := i_coprime_k
+        _ = I + K * (I + J i)      := by
+          have : I + J i = 1 := hf i (Finset.mem_insert_self i s)
+          rw [i_coprime_k.symm, this, mul_one]
+          exact i_coprime_k
+        _ = (1 + K) * I + K * J i  := by
+          ring
+        _ ≤ I + K ⊓ J i            := add_le_add mul_le_left mul_le_inf
+
 lemma chineseMap_surj [Fintype ι] {I : ι → Ideal R}
     (hI : ∀ i j, i ≠ j → IsCoprime (I i) (I j)) : Surjective (chineseMap I) := by
   classical
@@ -130,11 +145,50 @@ lemma chineseMap_surj [Fintype ι] {I : ι → Ideal R}
   have key : ∀ i, ∃ e : R, mk (I i) e = 1 ∧ ∀ j, j ≠ i → mk (I j) e = 0 := by
     intro i
     have hI' : ∀ j ∈ ({i} : Finset ι)ᶜ, IsCoprime (I i) (I j) := by
-      sorry
-    sorry
+      intro j hj
+      simp only [Finset.mem_compl, Finset.mem_singleton] at hj
+      push_neg at hj
+      apply hI i j hj.symm
+
+    have := isCoprime_Inf hI'
+    have := isCoprime_iff_exists.mp this
+    rcases this with ⟨x, hx, e, he, heq⟩
+    use e
+    constructor
+    rw [eq_sub_of_add_eq' heq]
+    simp only [map_sub, map_one, sub_eq_self]
+    exact eq_zero_iff_mem.mpr hx
+    intro j hj
+    have : ∀ j, j ≠ i → e ∈ I j := by
+      intro j' hj'
+      simp only [mem_iInf] at he
+      apply he j'
+      simp only [Finset.mem_compl, Finset.mem_singleton]
+      apply hj'
+    refine eq_zero_iff_mem.mpr ?_
+    apply (this j) hj
+
   choose e he using key
   use mk _ (∑ i, f i * e i)
-  sorry
+  rw [chineseMap]
+  ext y
+  simp
+  have mem := Finset.mem_univ y
+  rw [← Finset.add_sum_erase Finset.univ _ mem]
+  rw [(he y).1, hf]
+
+  have eq_zero : ∑ x ∈ Finset.univ.erase y, (mk (I y)) (f x) * (mk (I y)) (e x) = 0 := by
+    apply Finset.sum_eq_zero
+    intro x hx
+    have := (Finset.ne_of_mem_erase hx).symm
+    have he' : ∀ i j, i ≠ j → (mk ( I i)) (e j) = 0 := by
+      intro i j
+      exact (he j).2 i
+    rw [(he' y x) this]
+    ring
+
+  rw [eq_zero]
+  ring
 
 noncomputable def chineseIso [Fintype ι] (f : ι → Ideal R)
     (hf : ∀ i j, i ≠ j → IsCoprime (f i) (f j)) : (R ⧸ ⨅ i, f i) ≃+* Π i, R ⧸ f i :=
