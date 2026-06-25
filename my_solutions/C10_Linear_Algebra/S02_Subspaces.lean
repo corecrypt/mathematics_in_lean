@@ -35,11 +35,18 @@ def preimage {W : Type*} [AddCommGroup W] [Module K W] (φ : V →ₗ[K] W) (H :
     Submodule K V where
   carrier := φ ⁻¹' H
   zero_mem' := by
-    sorry
+    rw [Set.mem_preimage, φ.map_zero]
+    apply H.zero_mem
   add_mem' := by
-    sorry
+    intro a b ha hb
+    rw [Set.mem_preimage] at *
+    rw [φ.map_add]
+    apply add_mem ha hb
   smul_mem' := by
-    sorry
+    intro c x hphix
+    rw [Set.mem_preimage] at *
+    rw [φ.map_smul]
+    exact Submodule.smul_mem H c hphix
 
 example (U : Submodule K V) : Module K U := inferInstance
 
@@ -100,13 +107,41 @@ example {S T : Submodule K V} {x : V} (h : x ∈ S ⊔ T) :
   rw [← S.span_eq, ← T.span_eq, ← Submodule.span_union] at h
   induction h using Submodule.span_induction with
   | mem y h =>
-      sorry
+      rw [Set.mem_union] at h
+      rcases h with h' | h'
+      . use y, h'
+        use 0, T.zero_mem
+        module
+      . use 0, S.zero_mem
+        use y, h'
+        module
   | zero =>
-      sorry
+      use 0
+      constructor
+      exact S.zero_mem
+      use 0
+      constructor
+      exact T.zero_mem
+      module
   | add x y hx hy hx' hy' =>
-      sorry
+      rcases hx' with ⟨sx, hsx, tx, htx, rfl⟩
+      rcases hy' with ⟨sy, hsy, ty, hty, rfl⟩
+      use sx + sy
+      constructor
+      exact S.add_mem hsx hsy
+      use tx + ty
+      constructor
+      exact T.add_mem htx hty
+      module
   | smul a x hx hx' =>
-      sorry
+      rcases hx' with ⟨s, hs, t, ht, rfl⟩
+      use a • s
+      constructor
+      exact S.smul_mem a hs
+      use a • t
+      constructor
+      exact T.smul_mem a ht
+      module
 
 section
 
@@ -136,7 +171,13 @@ example : Surjective φ ↔ range φ = ⊤ := range_eq_top.symm
 
 example (E : Submodule K V) (F : Submodule K W) :
     Submodule.map φ E ≤ F ↔ E ≤ Submodule.comap φ F := by
-  sorry
+  constructor
+  intro h x hx
+  exact h (Submodule.mem_map_of_mem hx)
+  intro h x hx
+  rw [Submodule.mem_map] at hx
+  rcases hx with ⟨y, hy, rfl⟩
+  exact h hy
 
 variable (E : Submodule K V)
 
@@ -161,7 +202,14 @@ open Submodule
 #check Submodule.comap_map_eq
 
 example : Submodule K (V ⧸ E) ≃ { F : Submodule K V // E ≤ F } where
-  toFun := sorry
-  invFun := sorry
-  left_inv := sorry
-  right_inv := sorry
+  toFun := fun s ↦ ⟨Submodule.comap E.mkQ s, le_comap_mkQ E s⟩
+  invFun := fun f ↦ Submodule.map E.mkQ f
+  left_inv := by
+    intro s
+    dsimp
+    rw [Submodule.map_comap_eq, E.range_mkQ]
+    apply top_inf_eq
+  right_inv := by
+    intro f
+    simp
+    apply Subtype.ext (sup_of_le_right f.property)
